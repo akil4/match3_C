@@ -12,6 +12,8 @@ const char tile_chars[TILE_TYPES] = {'@', '#', '$', '%', '&'};
 
 char board[BOARD_SIZE][BOARD_SIZE];
 
+Vector2 grid_origin;
+
 char random_tile();
 void init_board();
 
@@ -38,8 +40,8 @@ int main(void)
             for (int j = 0; j < BOARD_SIZE; j++)
             {
                 Rectangle rect = {
-                    i * TILE_SIZE,
-                    j * TILE_SIZE,
+                    grid_origin.x + (i * TILE_SIZE),
+                    grid_origin.y + (j * TILE_SIZE),
                     TILE_SIZE,
                     TILE_SIZE
                 };
@@ -81,4 +83,12 @@ void init_board()
             board[i][j] = random_tile();
         }
     }
+
+    int grid_width = BOARD_SIZE * TILE_SIZE;
+    int grid_height = BOARD_SIZE * TILE_SIZE;
+
+    grid_origin = (Vector2) {
+        (GetScreenWidth() - grid_width) / 2,
+        (GetScreenHeight() - grid_height) / 2
+    };
 }
