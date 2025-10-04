@@ -12,6 +12,7 @@ const char tile_chars[TILE_TYPES] = {'@', '#', '$', '%', '&'};
 
 char board[BOARD_SIZE][BOARD_SIZE];
 
+int score = 0;
 Vector2 grid_origin;
 
 char random_tile();
@@ -61,6 +62,8 @@ int main(void)
                 );
             }
         }
+
+        DrawText(TextFormat("SCORE: %d", score), 20, 20, 24, RED);
 
         EndDrawing();
     }
