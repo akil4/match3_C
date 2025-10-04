@@ -1,8 +1,8 @@
 #include "raylib.h"
 #include <stdbool.h>
 #include <stdlib.h>
-#include <time.h>
 #include <math.h>
+#include <time.h>
 
 #define BOARD_SIZE 8
 #define TILE_SIZE 42
@@ -33,7 +33,32 @@ int main(void)
         BeginDrawing();
         ClearBackground(BLACK);
 
-        
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            for (int j = 0; j < BOARD_SIZE; j++)
+            {
+                Rectangle rect = {
+                    i * TILE_SIZE,
+                    j * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE
+                };
+
+                DrawRectangleLinesEx(rect, 1, GRAY);
+
+                Vector2 pos = {
+                    i * TILE_SIZE + 12,
+                    j * TILE_SIZE + 8
+                };
+
+                DrawTextEx(
+                    GetFontDefault(),
+                    TextFormat("%c", board[i][j]),
+                    (Vector2) {rect.x + 12, rect.y + 8},
+                    20, 1, WHITE
+                );
+            }
+        }
 
         EndDrawing();
     }
