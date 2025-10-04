@@ -7,6 +7,7 @@
 #define BOARD_SIZE 8
 #define TILE_SIZE 42
 #define TILE_TYPES 5
+#define SCORE_FONT_SIZE 32
 
 const char tile_chars[TILE_TYPES] = {'@', '#', '$', '%', '&'};
 
@@ -14,6 +15,7 @@ char board[BOARD_SIZE][BOARD_SIZE];
 
 int score = 0;
 Vector2 grid_origin;
+Vector2 selected_tile = {-1, -1};
 
 char random_tile();
 void init_board();
@@ -28,10 +30,21 @@ int main(void)
     srand(time(NULL));
 
     init_board();
+    Vector2 mouse = {0, 0};
 
     while(!WindowShouldClose())
     {
         // update game logic
+        mouse = GetMousePosition();
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            int x = (mouse.x - grid_origin.x) / TILE_SIZE;
+            int y = (mouse.y - grid_origin.y) / TILE_SIZE;
+            if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE)
+            {
+                selected_tile = (Vector2){x, y};
+            }
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -63,7 +76,27 @@ int main(void)
             }
         }
 
-        DrawText(TextFormat("SCORE: %d", score), 20, 20, 24, RED);
+        // select tile
+        if (selected_tile.x >= 0)
+        {
+            DrawRectangleLinesEx((Rectangle) {
+                grid_origin.x + (selected_tile.x * TILE_SIZE),
+                grid_origin.y + (selected_tile.y * TILE_SIZE),
+                TILE_SIZE,
+                TILE_SIZE
+            }, 2, YELLOW);
+        }
+
+        DrawTextEx(
+            GetFontDefault(),
+            TextFormat("SCORE: %d", score),
+            (Vector2) {
+                20, 20
+            },
+            SCORE_FONT_SIZE,
+            1.0f,
+            RED
+        );
 
         EndDrawing();
     }
