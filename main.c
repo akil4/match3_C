@@ -287,17 +287,18 @@ void init_board()
         (GetScreenHeight() - grid_height) / 2
     };
 
-    tile_state = STATE_IDLE;
+        tile_state = STATE_IDLE;
 }
 
 bool find_matches()
 {
     bool found = false;
-    for (int i = 0; i < BOARD_SIZE; i++)
+
+    for (int y = 0; y < BOARD_SIZE; y++)
     {
-        for (int j = 0; j < BOARD_SIZE; j++)
+        for (int x = 0; x < BOARD_SIZE; x++)
         {
-            matched[i][j] = false;
+            matched[y][x] = false;
         }
     }
 
@@ -306,19 +307,14 @@ bool find_matches()
         for (int x = 0; x < BOARD_SIZE - 2; x++)
         {
             char t = board[y][x];
-            if (t == board[y][x + 1] && 
+            if (t != ' ' &&
+                t == board[y][x + 1] && 
                 t == board[y][x + 2])
                 {
                     matched[y][x] = matched[y][x + 1] = matched[y][x + 2] = true;
                     // update scoreboard
                     score += 10;
                     found = true;
-
-                    score_animating = true;
-                    score_scale = 2.0f;
-                    score_scale_velocity = -2.5f;
-
-                    add_score_popup(x, y, 10, grid_origin);
                 }
         }
     }
@@ -328,19 +324,33 @@ bool find_matches()
         for (int y = 0; y < BOARD_SIZE - 2; y++)
         {
             char t = board[y][x];
-            if (t == board[y + 1][x] &&
+            if (t != ' ' &&
+                t == board[y + 1][x] &&
                 t == board[y + 2][x])
                 {
                     matched[y][x] = matched[y + 1][x] = matched[y + 2][x] = true;
                     score += 10;
                     found = true;
+                }
+        }
+    }
 
+    if (found)
+    {
+        int pointsPerTile = 10;
+        for (int y = 0; y < BOARD_SIZE; y++)
+        {
+            for (int x = 0; x < BOARD_SIZE; x++)
+            {
+                if (matched[y][x])
+                {
+                    score += pointsPerTile;
                     score_animating = true;
                     score_scale = 2.0f;
                     score_scale_velocity = -2.5f;
-
-                    add_score_popup(x, y, 10, grid_origin);
+                    add_score_popup(x, y, pointsPerTile, grid_origin);
                 }
+            }
         }
     }
 
