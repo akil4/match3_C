@@ -257,11 +257,25 @@ char random_tile()
 
 void init_board()
 {
-    for (int i = 0; i < BOARD_SIZE; i++)
+    do
     {
-        for (int j = 0; j < BOARD_SIZE; j++)
+        for (int y = 0; y < BOARD_SIZE; y++)
         {
-            board[i][j] = random_tile();
+            for (int x = 0; x < BOARD_SIZE; x++)
+            {
+                board[y][x] = random_tile();
+                matched[y][x] = false;
+                fall_offset[y][x] = 0;
+            }
+        }
+    }
+    while (find_matches());
+    
+    for (int y = 0; y < BOARD_SIZE; y++)
+    {
+        for (int x = 0; x < BOARD_SIZE; x++)
+        {
+            matched[y][x] = false;
         }
     }
 
@@ -273,11 +287,7 @@ void init_board()
         (GetScreenHeight() - grid_height) / 2
     };
 
-    while (find_matches())
-    {
-        init_board();
-    }
-        tile_state = STATE_IDLE;
+    tile_state = STATE_IDLE;
 }
 
 bool find_matches()
