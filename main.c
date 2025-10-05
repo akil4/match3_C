@@ -110,16 +110,16 @@ int main(void)
         if (tile_state == STATE_ANIMATING)
         {
             bool still_animating = false;
-            for (int i = 0; i < BOARD_SIZE; i++)
+            for (int y = 0; y < BOARD_SIZE; y++)
             {
-                for (int j = 0; j < BOARD_SIZE; j++)
+                for (int x = 0; x < BOARD_SIZE; x++)
                 {
-                    if (fall_offset[i][j] > 0)
+                    if (fall_offset[y][x] > 0)
                     {
-                        fall_offset[i][j] -= fall_speed;
-                        if (fall_offset[i][j] < 0)
+                        fall_offset[y][x] -= fall_speed;
+                        if (fall_offset[y][x] < 0)
                         {
-                            fall_offset[i][j] = 0;
+                            fall_offset[y][x] = 0;
                         }
                         else
                         {
@@ -179,28 +179,28 @@ int main(void)
         BeginDrawing();
         ClearBackground(BLACK);
 
-        for (int i = 0; i < BOARD_SIZE; i++)
+        for (int y = 0; y < BOARD_SIZE; y++)
         {
-            for (int j = 0; j < BOARD_SIZE; j++)
+            for (int x = 0; x < BOARD_SIZE; x++)
             {
                 Rectangle rect = {
-                    grid_origin.x + (i * TILE_SIZE),
-                    grid_origin.y + (j * TILE_SIZE),
+                    grid_origin.x + (x * TILE_SIZE),
+                    grid_origin.y + (y * TILE_SIZE),
                     TILE_SIZE,
                     TILE_SIZE
                 };
 
                 DrawRectangleLinesEx(rect, 1, GRAY);
 
-                if (board[i][j] != ' ')
+                if (board[y][x] != ' ')
                 {
                     DrawTextEx(
                     GetFontDefault(),
-                    TextFormat("%c", board[i][j]),
-                    (Vector2) {rect.x + 12, rect.y + 8 - fall_offset[i][j]},
+                    TextFormat("%c", board[y][x]),
+                    (Vector2) {rect.x + 12, rect.y + 8 - fall_offset[y][x]},
                     20, 
                     1, 
-                    matched[i][j] ? GREEN : WHITE
+                    matched[y][x] ? GREEN : WHITE
                     );
                 }
             }
