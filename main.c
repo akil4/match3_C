@@ -12,6 +12,7 @@
 const char tile_chars[TILE_TYPES] = {'@', '#', '$', '%', '&'};
 
 char board[BOARD_SIZE][BOARD_SIZE];
+bool matched[BOARD_SIZE][BOARD_SIZE] = {0};
 
 int score = 0;
 Vector2 grid_origin;
@@ -19,6 +20,8 @@ Vector2 selected_tile = {-1, -1};
 
 char random_tile();
 void init_board();
+bool find_matches();
+void resolve_matches();
 
 int main(void)
 {
@@ -46,6 +49,8 @@ int main(void)
             }
         }
 
+        resolve_matches();
+
         BeginDrawing();
         ClearBackground(BLACK);
 
@@ -71,7 +76,9 @@ int main(void)
                     GetFontDefault(),
                     TextFormat("%c", board[i][j]),
                     (Vector2) {rect.x + 12, rect.y + 8},
-                    20, 1, WHITE
+                    20, 
+                    1, 
+                    matched[i][j] ? GREEN : WHITE
                 );
             }
         }
@@ -128,3 +135,49 @@ void init_board()
         (GetScreenHeight() - grid_height) / 2
     };
 }
+
+bool find_matches()
+{
+    bool found = false;
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        for (int j = 0; j < BOARD_SIZE; j++)
+        {
+            matched[i][j] = false;
+        }
+    }
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        for (int j = 0; j < BOARD_SIZE - 2; j++)
+        {
+            char t = board[i][j];
+            if (t == board[i][j + 1] && 
+                t == board[i][j + 2])
+                {
+                    matched[i][j] = matched[i][j + 1] = matched[i][j + 2] = true;
+                    // update scoreboard
+                    score += 10;
+                    found = true;
+                }
+        }
+    }
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        for (int j = 0; j < BOARD_SIZE - 2; j++)
+        {
+            char t = board[j][i];
+            if (t == board[j + 1][i] &&
+                t == board[j + 2][i])
+                {
+                    matched[j][i] = matched[j + 1][i] = matched[j + 2][i] = true;
+                    score += 10;
+                    found = true;
+                }
+        }
+    }
+
+    return found;
+}
+
