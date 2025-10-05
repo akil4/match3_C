@@ -49,7 +49,10 @@ int main(void)
             }
         }
 
-        resolve_matches();
+        if (find_matches())
+        {
+            resolve_matches();
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -181,3 +184,25 @@ bool find_matches()
     return found;
 }
 
+void resolve_matches()
+{
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        int write_j = BOARD_SIZE - 1;
+        for (int j = BOARD_SIZE - 1; j >= 0; j--)
+        {
+            if (!matched[j][i])
+            {
+                board[write_j][i] = board[j][i];
+                write_j--;
+            }
+        }
+
+        // fill new tiles
+        while (write_j >= 0)
+        {
+            board[write_j][i] = random_tile();
+            write_j--;
+        }
+    }
+}
