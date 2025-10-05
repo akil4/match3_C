@@ -312,8 +312,6 @@ bool find_matches()
                 t == board[y][x + 2])
                 {
                     matched[y][x] = matched[y][x + 1] = matched[y][x + 2] = true;
-                    // update scoreboard
-                    score += 10;
                     found = true;
                 }
         }
@@ -329,7 +327,6 @@ bool find_matches()
                 t == board[y + 2][x])
                 {
                     matched[y][x] = matched[y + 1][x] = matched[y + 2][x] = true;
-                    score += 10;
                     found = true;
                 }
         }
@@ -359,36 +356,66 @@ bool find_matches()
 
 void resolve_matches()
 {
-    for (int i = 0; i < BOARD_SIZE; i++)
+    for (int x = 0; x < BOARD_SIZE; x++)
     {
-        int write_j = BOARD_SIZE - 1;
-        for (int j = BOARD_SIZE - 1; j >= 0; j--)
+        int write_y = BOARD_SIZE - 1;
+        for (int y = BOARD_SIZE - 1; y >= 0; y--)
         {
-            if (!matched[j][i])
+            if (!matched[y][x])
             {
-                if (j != write_j)
+                if (y != write_y)
                 {
-                    board[write_j][i] = board[j][i];
-                    fall_offset[write_j][i] = (write_j - j) * TILE_SIZE;
-                    board[j][i] = ' ';
+                    board[write_y][x] = board[y][x];
+                    fall_offset[write_y][x] = (write_y - y) * TILE_SIZE;
+                    board[y][x] = ' ';
                 }
-                write_j--;
+                write_y--;
+            }
+            else
+            {
+                board[y][x] = ' ';
             }
         }
 
         // fill new tiles
-        do
+        while (write_y >=0)
         {
-            board[write_j][i] = random_tile();
+            char nt;
+            do
+            {
+                nt = random_tile();
+
+                if (write_y <= BOARD_SIZE - 3)
+                {
+                    if (board[write_y + 1][x] == nt && board[write_y][x] == nt) continue;
+
+                }
+
+                if (x <= BOARD_SIZE - 3)
+                {
+                    if (board[write_y][x + 1] ==nt && board[write_y][x + 2] == nt) continue;
+                }
+
+                if (x >= 2)
+                {
+                    if (board[write_y][x - 1] == nt && board[write_y][x - 2] == nt) continue;
+                }
+                break;
+            }
+            while(1);
+
+            board[write_y][x] = nt;
+            fall_offset[write_y][x] = (write_y + 1) * TILE_SIZE;
+            write_y--;
         }
-        while (
-            (write_j < BOARD_SIZE - 2 &&
-            board[write_j][i] == board[write_j + 1][i] &&
-            board[write_j][i] == board[write_j + 2][i]) ||
-            (i < BOARD_SIZE - 2 &&
-            board[write_j][i] == board[write_j][i + 1] &&
-            board[write_j][i] == board[write_j][i + 2])
-            );
+    }
+
+    for (int y = 0; y < BOARD_SIZE; y++)
+    {
+        for (int x = 0; x < BOARD_SIZE; x++)
+        {
+            matched[y][x] = false;
+        }
     }
 
     tile_state = STATE_ANIMATING;
