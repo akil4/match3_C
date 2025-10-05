@@ -334,7 +334,7 @@ bool find_matches()
 
     if (found)
     {
-        int pointsPerTile = 10;
+        int pointsPerTile = 1;
         for (int y = 0; y < BOARD_SIZE; y++)
         {
             for (int x = 0; x < BOARD_SIZE; x++)
