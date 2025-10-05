@@ -1,3 +1,11 @@
+/**
+ * The code implements a simple Match-3 game in C using the Raylib library, where players can
+ * swap adjacent tiles to create matches and earn points.
+ * 
+ * The program includes game logic for matching tiles, resolving matches, swapping tiles, and handling
+ * score popups. The main function initializes the game window, updates game logic based on user input
+ * and game state, and renders the game elements on the screen.
+ */
 #include "raylib.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -265,13 +273,11 @@ void init_board()
         (GetScreenHeight() - grid_height) / 2
     };
 
-    if (find_matches())
+    while (find_matches())
     {
-        resolve_matches();
+        init_board();
     }
-    else{
         tile_state = STATE_IDLE;
-    }
 }
 
 bool find_matches()
@@ -285,15 +291,15 @@ bool find_matches()
         }
     }
 
-    for (int i = 0; i < BOARD_SIZE; i++)
+    for (int y = 0; y < BOARD_SIZE; y++)
     {
-        for (int j = 0; j < BOARD_SIZE - 2; j++)
+        for (int x = 0; x < BOARD_SIZE - 2; x++)
         {
-            char t = board[i][j];
-            if (t == board[i][j + 1] && 
-                t == board[i][j + 2])
+            char t = board[y][x];
+            if (t == board[y][x + 1] && 
+                t == board[y][x + 2])
                 {
-                    matched[i][j] = matched[i][j + 1] = matched[i][j + 2] = true;
+                    matched[y][x] = matched[y][x + 1] = matched[y][x + 2] = true;
                     // update scoreboard
                     score += 10;
                     found = true;
@@ -302,20 +308,20 @@ bool find_matches()
                     score_scale = 2.0f;
                     score_scale_velocity = -2.5f;
 
-                    add_score_popup(i, j, 10, grid_origin);
+                    add_score_popup(x, y, 10, grid_origin);
                 }
         }
     }
 
-    for (int i = 0; i < BOARD_SIZE; i++)
+    for (int x = 0; x < BOARD_SIZE; x++)
     {
-        for (int j = 0; j < BOARD_SIZE - 2; j++)
+        for (int y = 0; y < BOARD_SIZE - 2; y++)
         {
-            char t = board[j][i];
-            if (t == board[j + 1][i] &&
-                t == board[j + 2][i])
+            char t = board[y][x];
+            if (t == board[y + 1][x] &&
+                t == board[y + 2][x])
                 {
-                    matched[j][i] = matched[j + 1][i] = matched[j + 2][i] = true;
+                    matched[y][x] = matched[y + 1][x] = matched[y + 2][x] = true;
                     score += 10;
                     found = true;
 
@@ -323,7 +329,7 @@ bool find_matches()
                     score_scale = 2.0f;
                     score_scale_velocity = -2.5f;
 
-                    add_score_popup(i, j, 10, grid_origin);
+                    add_score_popup(x, y, 10, grid_origin);
                 }
         }
     }
@@ -351,12 +357,18 @@ void resolve_matches()
         }
 
         // fill new tiles
-        while (write_j >= 0)
+        do
         {
             board[write_j][i] = random_tile();
-            fall_offset[write_j][i] = (write_j + 1) * TILE_SIZE;
-            write_j--;
         }
+        while (
+            (write_j < BOARD_SIZE - 2 &&
+            board[write_j][i] == board[write_j + 1][i] &&
+            board[write_j][i] == board[write_j + 2][i]) ||
+            (i < BOARD_SIZE - 2 &&
+            board[write_j][i] == board[write_j][i + 1] &&
+            board[write_j][i] == board[write_j][i + 2])
+            );
     }
 
     tile_state = STATE_ANIMATING;
