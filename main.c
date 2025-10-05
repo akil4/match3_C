@@ -8,6 +8,7 @@
 #define TILE_SIZE 42
 #define TILE_TYPES 5
 #define SCORE_FONT_SIZE 32
+#define MAX_SCORE_POPUPS 32
 
 const char tile_chars[TILE_TYPES] = {'@', '#', '$', '%', '&'};
 
@@ -19,11 +20,38 @@ float fall_speed = 8.0f;
 int score = 0;
 Vector2 grid_origin;
 Vector2 selected_tile = {-1, -1};
+float match_delay_timer = 0.0f;
+const float MATCH_DELAY_DURATION = 0.2f;
+
+float score_scale = 1.0f;
+float score_scale_velocity = 0.0f;
+bool score_animating = false;
+
+typedef enum {
+    STATE_IDLE,
+    STATE_ANIMATING,
+    STATE_MATCH_DELAY
+} TileState;
+
+TileState tile_state;
+
+typedef struct {
+    Vector2 position;
+    int amount;
+    float lifetime;
+    float alpha;
+    bool active;
+} ScorePopup;
+
+ScorePopup score_popups[MAX_SCORE_POPUPS] = {0};
 
 char random_tile();
 void init_board();
 bool find_matches();
 void resolve_matches();
+void swap_tiles(int x1, int y1, int x2, int y2);
+bool are_tiles_adjacent(Vector2 a, Vector2 b);
+void add_score_popup(int x, int y, int amount, Vector2 grid_origin);
 
 int main(void)
 {
@@ -41,33 +69,102 @@ int main(void)
     {
         // update game logic
         mouse = GetMousePosition();
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        if (tile_state == STATE_IDLE && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             int x = (mouse.x - grid_origin.x) / TILE_SIZE;
             int y = (mouse.y - grid_origin.y) / TILE_SIZE;
             if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE)
             {
-                selected_tile = (Vector2){x, y};
+                Vector2 current_tile = (Vector2){x, y};
+                if (selected_tile.x < 0)
+                {
+                    selected_tile = current_tile;
+                }
+                else
+                {
+                    if (are_tiles_adjacent(selected_tile, current_tile))
+                    {
+                        swap_tiles(selected_tile.x, selected_tile.y, current_tile.x, current_tile.y);
+                        if (find_matches())
+                        {
+                            resolve_matches();
+                        }
+                        else
+                        {
+                            swap_tiles(selected_tile.x, selected_tile.y, current_tile.x, current_tile.y);
+                        }                        
+                    }
+                    selected_tile = (Vector2){-1, -1};
+                }
             }
         }
 
-        if (find_matches())
+        if (tile_state == STATE_ANIMATING)
         {
-            resolve_matches();
-        }
-
-        for (int i = 0; i < BOARD_SIZE; i++)
-        {
-            for (int j = 0; j < BOARD_SIZE; j++)
+            bool still_animating = false;
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
-                if (fall_offset[i][j] > 0)
+                for (int j = 0; j < BOARD_SIZE; j++)
                 {
-                    fall_offset[i][j] -= fall_speed;
-                    if (fall_offset[i][j] < 0)
+                    if (fall_offset[i][j] > 0)
                     {
-                        fall_offset[i][j] = 0;
+                        fall_offset[i][j] -= fall_speed;
+                        if (fall_offset[i][j] < 0)
+                        {
+                            fall_offset[i][j] = 0;
+                        }
+                        else
+                        {
+                            still_animating = true;
+                        }
                     }
                 }
+            }
+            if (!still_animating)
+            {
+                tile_state = STATE_MATCH_DELAY;
+                match_delay_timer = MATCH_DELAY_DURATION;
+            }
+        }
+
+        if (tile_state == STATE_MATCH_DELAY)
+        {
+            match_delay_timer -= GetFrameTime();
+            if (match_delay_timer <= 0.0f)
+            {
+                if (find_matches())
+                {
+                    resolve_matches();
+                }
+                else{
+                    tile_state = STATE_IDLE;
+                }
+            }
+        }
+        
+        for (int i = 0; i < MAX_SCORE_POPUPS; i++)
+        {
+            if (score_popups[i].active)
+            {
+                score_popups[i].lifetime -= GetFrameTime();
+                score_popups[i].position.y -= 30 * GetFrameTime();
+                score_popups[i].alpha = score_popups[i].lifetime;
+
+                if (score_popups[i].lifetime <= 0.0f)
+                {
+                    score_popups[i].active = false;
+                }
+            }
+        }
+
+        // update score animation
+        if (score_animating)
+        {
+            score_scale += score_scale_velocity * GetFrameTime();
+            if (score_scale <= 1.0f)
+            {
+                score_scale = 1.0f;
+                score_animating = false;
             }
         }
 
@@ -118,10 +215,25 @@ int main(void)
             (Vector2) {
                 20, 20
             },
-            SCORE_FONT_SIZE,
+            SCORE_FONT_SIZE * score_scale,
             1.0f,
             RED
         );
+
+        // draw score popup
+        for (int i = 0; i < MAX_SCORE_POPUPS; i++)
+        {
+            if (score_popups[i].active)
+            {
+                Color c = Fade(YELLOW, score_popups[i].alpha);
+                DrawText(
+                    TextFormat("%d", score_popups[i].amount),
+                    score_popups[i].position.x,
+                    score_popups[i].position.y,
+                    20, c
+                );
+            }
+        }
 
         EndDrawing();
     }
@@ -152,6 +264,14 @@ void init_board()
         (GetScreenWidth() - grid_width) / 2,
         (GetScreenHeight() - grid_height) / 2
     };
+
+    if (find_matches())
+    {
+        resolve_matches();
+    }
+    else{
+        tile_state = STATE_IDLE;
+    }
 }
 
 bool find_matches()
@@ -177,6 +297,12 @@ bool find_matches()
                     // update scoreboard
                     score += 10;
                     found = true;
+
+                    score_animating = true;
+                    score_scale = 2.0f;
+                    score_scale_velocity = -2.5f;
+
+                    add_score_popup(i, j, 10, grid_origin);
                 }
         }
     }
@@ -192,6 +318,12 @@ bool find_matches()
                     matched[j][i] = matched[j + 1][i] = matched[j + 2][i] = true;
                     score += 10;
                     found = true;
+
+                    score_animating = true;
+                    score_scale = 2.0f;
+                    score_scale_velocity = -2.5f;
+
+                    add_score_popup(i, j, 10, grid_origin);
                 }
         }
     }
@@ -224,6 +356,39 @@ void resolve_matches()
             board[write_j][i] = random_tile();
             fall_offset[write_j][i] = (write_j + 1) * TILE_SIZE;
             write_j--;
+        }
+    }
+
+    tile_state = STATE_ANIMATING;
+}
+
+void swap_tiles(int x1, int y1, int x2, int y2)
+{
+    char temp = board[y1][x1];
+    board[y1][x1] = board[y2][x2];
+    board[y2][x2] = temp;
+}
+
+bool are_tiles_adjacent(Vector2 a, Vector2 b)
+{
+    return (abs((int)a.x - (int)b.x) + abs((int)a.y - (int)b.y)) ==1;
+}
+
+void add_score_popup(int x, int y, int amount, Vector2 grid_origin)
+{
+    for (int i = 0; i < MAX_SCORE_POPUPS; i++)
+    {
+        if (!score_popups[i].active)
+        {
+            score_popups[i].position = (Vector2){
+                grid_origin.x + x * TILE_SIZE + TILE_SIZE / 2,
+                grid_origin.y + y * TILE_SIZE + TILE_SIZE / 2
+            };
+            score_popups[i].amount = amount;
+            score_popups[i].lifetime = 1.0f;
+            score_popups[i].alpha = 1.0f;
+            score_popups[i].active = true;
+            break;
         }
     }
 }
