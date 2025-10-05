@@ -13,7 +13,9 @@ const char tile_chars[TILE_TYPES] = {'@', '#', '$', '%', '&'};
 
 char board[BOARD_SIZE][BOARD_SIZE];
 bool matched[BOARD_SIZE][BOARD_SIZE] = {0};
+float fall_offset[BOARD_SIZE][BOARD_SIZE] = {0};
 
+float fall_speed = 8.0f;
 int score = 0;
 Vector2 grid_origin;
 Vector2 selected_tile = {-1, -1};
@@ -54,6 +56,21 @@ int main(void)
             resolve_matches();
         }
 
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            for (int j = 0; j < BOARD_SIZE; j++)
+            {
+                if (fall_offset[i][j] > 0)
+                {
+                    fall_offset[i][j] -= fall_speed;
+                    if (fall_offset[i][j] < 0)
+                    {
+                        fall_offset[i][j] = 0;
+                    }
+                }
+            }
+        }
+
         BeginDrawing();
         ClearBackground(BLACK);
 
@@ -70,19 +87,17 @@ int main(void)
 
                 DrawRectangleLinesEx(rect, 1, GRAY);
 
-                Vector2 pos = {
-                    i * TILE_SIZE + 12,
-                    j * TILE_SIZE + 8
-                };
-
-                DrawTextEx(
+                if (board[i][j] != ' ')
+                {
+                    DrawTextEx(
                     GetFontDefault(),
                     TextFormat("%c", board[i][j]),
-                    (Vector2) {rect.x + 12, rect.y + 8},
+                    (Vector2) {rect.x + 12, rect.y + 8 - fall_offset[i][j]},
                     20, 
                     1, 
                     matched[i][j] ? GREEN : WHITE
-                );
+                    );
+                }
             }
         }
 
@@ -193,7 +208,12 @@ void resolve_matches()
         {
             if (!matched[j][i])
             {
-                board[write_j][i] = board[j][i];
+                if (j != write_j)
+                {
+                    board[write_j][i] = board[j][i];
+                    fall_offset[write_j][i] = (write_j - j) * TILE_SIZE;
+                    board[j][i] = ' ';
+                }
                 write_j--;
             }
         }
@@ -202,6 +222,7 @@ void resolve_matches()
         while (write_j >= 0)
         {
             board[write_j][i] = random_tile();
+            fall_offset[write_j][i] = (write_j + 1) * TILE_SIZE;
             write_j--;
         }
     }
